@@ -1,20 +1,31 @@
 
+import { db } from '../db';
+import { manifestsTable } from '../db/schema';
 import { type CreateManifestInput, type Manifest } from '../schema';
 
 export const createManifest = async (input: CreateManifestInput): Promise<Manifest> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new manifest and persisting it in the database.
-    // It should validate the input, convert key_technologies array to the proper format,
-    // and insert the new manifest record with auto-generated timestamps.
-    return Promise.resolve({
-        id: 0, // Placeholder ID
+  try {
+    // Insert manifest record
+    const result = await db.insert(manifestsTable)
+      .values({
         name: input.name,
         content: input.content,
         target_platform: input.target_platform,
-        key_technologies: input.key_technologies,
+        key_technologies: input.key_technologies, // Array is stored directly
         deployment_notes: input.deployment_notes,
-        region: input.region,
-        created_at: new Date(),
-        updated_at: new Date()
-    } as Manifest);
+        region: input.region
+      })
+      .returning()
+      .execute();
+
+    // Cast key_technologies from string[] to the expected union type array
+    const manifest = result[0];
+    return {
+      ...manifest,
+      key_technologies: manifest.key_technologies as Manifest['key_technologies']
+    };
+  } catch (error) {
+    console.error('Manifest creation failed:', error);
+    throw error;
+  }
 };
